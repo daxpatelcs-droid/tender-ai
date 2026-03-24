@@ -103,7 +103,7 @@ def login():
         result = login_user(email, password)
 
         if result["success"]:
-            session["user_id"] = result["user"].id
+            session["user_id"] = result["user"]["id"]
             session["user_email"] = email
             flash("Welcome back!", "success")
             return redirect(url_for("dashboard"))
