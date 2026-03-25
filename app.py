@@ -11,7 +11,7 @@ from auth import (
     save_tender_analysis, get_tender_history,
     get_dashboard_stats
 )
-from analyzer import extract_text_from_pdf, analyze_tender
+from analyzer import extract_text_from_pdf, extract_questions, analyze_tender
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "tender-ai-secret-2024")
@@ -140,8 +140,8 @@ def analyze():
     user_id = session["user_id"]
     profile = get_company_profile(user_id)
 
-    if request.method == "POST":
-        # Check if PDF was uploaded
+    # ── Step 1: PDF uploaded → extract questions ──────────────
+    if request.method == "POST" and request.form.get("step") == "upload":
         if "pdf_file" not in request.files:
             flash("Please upload a PDF file.", "error")
             return render_template("analyze.html", profile=profile)
@@ -151,24 +151,60 @@ def analyze():
             flash("No file selected.", "error")
             return render_template("analyze.html", profile=profile)
 
-        # Save to temp file and extract text
+        import tempfile
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             pdf_file.save(tmp.name)
             pdf_text = extract_text_from_pdf(tmp.name)
+            # Store path for second call
+            session["tmp_pdf_path"] = tmp.name
 
         if not pdf_text:
-            flash("Could not extract text from PDF. Make sure it is not scanned/image-only.", "error")
+            flash("Could not extract text from PDF.", "error")
             return render_template("analyze.html", profile=profile)
 
-        # Use override profile if provided
-        analysis_profile = profile.copy() if profile else {}
+        # Store pdf text in session for second call
+        session["pdf_text"] = pdf_text[:8000]
+
+        # Override profile if provided
+        analysis_profile = dict(profile) if profile else {}
         if request.form.get("override_domain"):
             analysis_profile["domain"] = request.form.get("override_domain")
         if request.form.get("override_turnover"):
             analysis_profile["turnover"] = request.form.get("override_turnover")
 
-        # Run AI analysis
-        result = analyze_tender(pdf_text, analysis_profile)
+        session["analysis_profile"] = analysis_profile
+
+        # First AI call — get questions
+        q_result = extract_questions(pdf_text, analysis_profile)
+
+        if not q_result["success"]:
+            flash(f"Error reading tender: {q_result['error']}", "error")
+            return render_template("analyze.html", profile=profile)
+
+        # Return page with questions popup data
+        return render_template("analyze.html",
+                               profile=profile,
+                               show_questions=True,
+                               questions_data=q_result["data"])
+
+    # ── Step 2: Answers submitted → final analysis ────────────
+    if request.method == "POST" and request.form.get("step") == "answers":
+        pdf_text = session.get("pdf_text", "")
+        analysis_profile = session.get("analysis_profile", {})
+
+        if not pdf_text:
+            flash("Session expired. Please upload the PDF again.", "error")
+            return render_template("analyze.html", profile=profile)
+
+        # Collect all answers from form
+        answers = {}
+        for key, value in request.form.items():
+            if key.startswith("answer_"):
+                question_text = key.replace("answer_", "").replace("_", " ")
+                answers[question_text] = value
+
+        # Second AI call — full analysis with answers
+        result = analyze_tender(pdf_text, analysis_profile, answers)
 
         if not result["success"]:
             flash(f"Analysis failed: {result['error']}", "error")
@@ -176,6 +212,11 @@ def analyze():
 
         # Save to history
         save_tender_analysis(user_id, result["data"])
+
+        # Clear session data
+        session.pop("pdf_text", None)
+        session.pop("analysis_profile", None)
+        session.pop("tmp_pdf_path", None)
 
         return render_template("analyze.html",
                                profile=profile,

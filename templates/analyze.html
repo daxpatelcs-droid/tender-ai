@@ -6,26 +6,24 @@
   <h1 class="text-3xl font-bold mb-1">Analyze a Tender</h1>
   <p class="text-gray-400 text-sm mb-8">Upload a tender PDF and get instant AI-powered analysis</p>
 
-  <!-- Upload form -->
-  {% if not result %}
+  <!-- Upload Form (Step 1) -->
+  {% if not result and not show_questions %}
   <div class="bg-white rounded-2xl shadow-sm p-8 mb-8">
-    <form method="POST" enctype="multipart/form-data" id="analyzeForm">
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+      <input type="hidden" name="step" value="upload"/>
 
-      <!-- PDF Upload -->
       <div class="mb-6">
         <label class="block font-semibold mb-2">Upload Tender PDF *</label>
         <input type="file" name="pdf_file" accept=".pdf" required
-          class="w-full border-2 border-dashed border-indigo-300 rounded-xl px-4 py-6 text-sm text-gray-500 cursor-pointer hover:border-indigo-500 focus:outline-none"/>
+          class="w-full border-2 border-dashed border-indigo-300 rounded-xl px-4 py-8 text-sm text-gray-500 cursor-pointer hover:border-indigo-500 focus:outline-none"/>
       </div>
 
-      <!-- Override options -->
       <div class="mb-6">
-        <p class="font-semibold mb-2 text-sm text-gray-500">Override Profile (optional — for one-off analysis)</p>
+        <p class="font-semibold mb-2 text-sm text-gray-500">Override Profile (optional)</p>
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm mb-1">Domain Override</label>
-            <input type="text" name="override_domain"
-              placeholder="e.g. IT, Construction"
+            <input type="text" name="override_domain" placeholder="e.g. IT, Construction"
               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
           </div>
           <div>
@@ -36,15 +34,14 @@
         </div>
       </div>
 
-      <!-- Company profile being used -->
       {% if profile %}
       <div class="bg-indigo-50 rounded-lg p-4 text-sm mb-6">
         <p class="font-semibold text-indigo-700 mb-1">Using your saved profile:</p>
-        <p class="text-gray-600">{{ profile.company_name }} · {{ profile.domain }} · ₹{{ profile.turnover }} Lakhs · {{ profile.experience }} yrs exp</p>
+        <p class="text-gray-600">{{ profile.company_name }} · {{ profile.domain }} · ₹{{ profile.turnover }} Lakhs · {{ profile.experience }} yrs</p>
       </div>
       {% endif %}
 
-      <button type="submit" id="submitBtn"
+      <button type="submit" id="uploadBtn"
         class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
         Analyze Tender
       </button>
@@ -54,235 +51,283 @@
 
   <!-- Results -->
   {% if result %}
-<div class="space-y-6">
+  <div class="space-y-6">
 
-  <!-- Tender Type + Bid Recommendation Banner -->
-  <div class="rounded-xl p-6 flex flex-wrap items-center justify-between gap-4
-    {% if result.bid_recommendation == 'BID' %} bg-green-50 border-2 border-green-400
-    {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} bg-yellow-50 border-2 border-yellow-400
-    {% else %} bg-red-50 border-2 border-red-400 {% endif %}">
-    <div>
-      <p class="text-sm font-medium text-gray-500 mb-1">Tender Type Detected</p>
-      <p class="text-2xl font-extrabold text-gray-800">
-        {% if result.tender_type == 'L1' %} 🏷️ L1 — Lowest Bidder
-        {% elif result.tender_type == 'QCBS' %} 📊 QCBS — Quality + Cost
-        {% elif result.tender_type == 'REVERSE_AUCTION' %} 🔨 Reverse Auction
-        {% elif result.tender_type == 'GEM' %} 🛒 GeM Portal
-        {% elif result.tender_type == 'DIRECT' %} 📋 Direct / Nomination
-        {% else %} {{ result.tender_type }} {% endif %}
-      </p>
-      <p class="text-xs text-gray-400 mt-1">{{ result.tender_type_reason }}</p>
-    </div>
-    <div class="text-center">
-      <p class="text-sm font-medium text-gray-500 mb-1">Bid Recommendation</p>
-      <span class="text-2xl font-extrabold
-        {% if result.bid_recommendation == 'BID' %} text-green-600
-        {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} text-yellow-600
-        {% else %} text-red-600 {% endif %}">
-        {% if result.bid_recommendation == 'BID' %} ✅ BID
-        {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} ⚠️ CONDITIONAL BID
-        {% else %} ❌ DO NOT BID {% endif %}
-      </span>
-      <p class="text-xs text-gray-400 mt-1 max-w-xs">{{ result.bid_recommendation_reason }}</p>
-    </div>
-  </div>
-
-  <!-- Scores Row -->
-  <div class="grid md:grid-cols-3 gap-4">
-    <div class="bg-white rounded-xl shadow-sm p-5 text-center">
-      <p class="text-sm text-gray-400 mb-1">Eligibility Score</p>
-      <p class="text-4xl font-extrabold
-        {% if result.eligibility_score >= 70 %} text-green-500
-        {% elif result.eligibility_score >= 40 %} text-yellow-500
-        {% else %} text-red-500 {% endif %}">
-        {{ result.eligibility_score }}%
-      </p>
-      <p class="text-xs mt-1
-        {% if result.overall_eligibility == 'ELIGIBLE' %} text-green-500
-        {% elif result.overall_eligibility == 'PARTIALLY_ELIGIBLE' %} text-yellow-500
-        {% else %} text-red-500 {% endif %}">
-        {{ result.overall_eligibility | replace('_', ' ') }}
-      </p>
+    <!-- Tender Type + Bid Recommendation Banner -->
+    <div class="rounded-xl p-6 flex flex-wrap items-center justify-between gap-4
+      {% if result.bid_recommendation == 'BID' %} bg-green-50 border-2 border-green-400
+      {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} bg-yellow-50 border-2 border-yellow-400
+      {% else %} bg-red-50 border-2 border-red-400 {% endif %}">
+      <div>
+        <p class="text-sm font-medium text-gray-500 mb-1">Tender Type Detected</p>
+        <p class="text-2xl font-extrabold text-gray-800">
+          {% if result.tender_type == 'L1' %} 🏷️ L1 — Lowest Bidder
+          {% elif result.tender_type == 'QCBS' %} 📊 QCBS — Quality + Cost
+          {% elif result.tender_type == 'REVERSE_AUCTION' %} 🔨 Reverse Auction
+          {% elif result.tender_type == 'GEM' %} 🛒 GeM Portal
+          {% elif result.tender_type == 'DIRECT' %} 📋 Direct / Nomination
+          {% else %} {{ result.tender_type }} {% endif %}
+        </p>
+        <p class="text-xs text-gray-400 mt-1">{{ result.tender_type_reason }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-medium text-gray-500 mb-1">Bid Recommendation</p>
+        <span class="text-2xl font-extrabold
+          {% if result.bid_recommendation == 'BID' %} text-green-600
+          {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} text-yellow-600
+          {% else %} text-red-600 {% endif %}">
+          {% if result.bid_recommendation == 'BID' %} ✅ BID
+          {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} ⚠️ CONDITIONAL BID
+          {% else %} ❌ DO NOT BID {% endif %}
+        </span>
+        <p class="text-xs text-gray-400 mt-1 max-w-xs">{{ result.bid_recommendation_reason }}</p>
+      </div>
     </div>
 
-    {% if result.t_score_estimate %}
-    <div class="bg-white rounded-xl shadow-sm p-5 text-center">
-      <p class="text-sm text-gray-400 mb-1">Technical Score (T)</p>
-      <p class="text-4xl font-extrabold text-indigo-600">{{ result.t_score_estimate }}<span class="text-xl text-gray-300">/100</span></p>
-      {% if result.qcbs_ratio %}
-      <p class="text-xs text-gray-400 mt-1">QCBS Ratio: {{ result.qcbs_ratio }}</p>
+    <!-- Scores Row -->
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="bg-white rounded-xl shadow-sm p-5 text-center">
+        <p class="text-sm text-gray-400 mb-1">Eligibility Score</p>
+        <p class="text-4xl font-extrabold
+          {% if result.eligibility_score >= 70 %} text-green-500
+          {% elif result.eligibility_score >= 40 %} text-yellow-500
+          {% else %} text-red-500 {% endif %}">
+          {{ result.eligibility_score }}%
+        </p>
+        <p class="text-xs mt-1
+          {% if result.overall_eligibility == 'ELIGIBLE' %} text-green-500
+          {% elif result.overall_eligibility == 'PARTIALLY_ELIGIBLE' %} text-yellow-500
+          {% else %} text-red-500 {% endif %}">
+          {{ result.overall_eligibility | replace('_', ' ') }}
+        </p>
+      </div>
+      {% if result.t_score_estimate %}
+      <div class="bg-white rounded-xl shadow-sm p-5 text-center">
+        <p class="text-sm text-gray-400 mb-1">Technical Score (T)</p>
+        <p class="text-4xl font-extrabold text-indigo-600">{{ result.t_score_estimate }}<span class="text-xl text-gray-300">/100</span></p>
+        {% if result.qcbs_ratio %}<p class="text-xs text-gray-400 mt-1">QCBS Ratio: {{ result.qcbs_ratio }}</p>{% endif %}
+      </div>
       {% endif %}
+      <div class="bg-white rounded-xl shadow-sm p-5 text-center">
+        <p class="text-sm text-gray-400 mb-1">Project Value</p>
+        <p class="text-2xl font-extrabold text-gray-700">₹{{ result.project_value }}<span class="text-sm font-normal text-gray-400"> L</span></p>
+        <p class="text-xs text-gray-400 mt-1">{{ result.location or '—' }}</p>
+      </div>
+    </div>
+
+    <!-- Eligibility Checklist -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-1">Eligibility Checklist</h2>
+      <p class="text-sm text-gray-400 mb-4">{{ result.eligibility_summary }}</p>
+      <div class="space-y-3">
+        {% for item in result.eligibility_criteria %}
+        <div class="flex items-start justify-between gap-4 p-3 rounded-lg
+          {% if item.status == 'PASS' %} bg-green-50
+          {% elif item.status == 'FAIL' %} bg-red-50
+          {% else %} bg-yellow-50 {% endif %}">
+          <div class="flex items-start gap-3">
+            <span class="text-lg mt-0.5">
+              {% if item.status == 'PASS' %}✅{% elif item.status == 'FAIL' %}❌{% else %}⚠️{% endif %}
+            </span>
+            <div>
+              <p class="font-semibold text-sm">{{ item.criterion }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ item.note }}</p>
+            </div>
+          </div>
+          <div class="text-right text-xs shrink-0">
+            <p class="text-gray-400">Required: <span class="font-medium text-gray-700">{{ item.required }}</span></p>
+            <p class="text-gray-400">You have: <span class="font-medium text-gray-700">{{ item.company_has }}</span></p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if result.t1_gap %}
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+      <h2 class="font-bold text-indigo-700 mb-2">📊 T1 Gap Analysis</h2>
+      <p class="text-sm text-gray-600">{{ result.t1_gap }}</p>
     </div>
     {% endif %}
 
-    <div class="bg-white rounded-xl shadow-sm p-5 text-center">
-      <p class="text-sm text-gray-400 mb-1">Project Value</p>
-      <p class="text-2xl font-extrabold text-gray-700">₹{{ result.project_value }}<span class="text-sm font-normal text-gray-400"> L</span></p>
-      <p class="text-xs text-gray-400 mt-1">{{ result.location or '—' }}</p>
+    {% if result.l1_strategy %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+      <h2 class="font-bold text-blue-700 mb-2">🏷️ L1 Bidding Strategy</h2>
+      <p class="text-sm text-gray-600">{{ result.l1_strategy }}</p>
     </div>
-  </div>
+    {% endif %}
 
-  <!-- Eligibility Checklist -->
-  <div class="bg-white rounded-xl shadow-sm p-6">
-    <h2 class="font-bold text-lg mb-1">Eligibility Checklist</h2>
-    <p class="text-sm text-gray-400 mb-4">{{ result.eligibility_summary }}</p>
-    <div class="space-y-3">
-      {% for item in result.eligibility_criteria %}
-      <div class="flex items-start justify-between gap-4 p-3 rounded-lg
-        {% if item.status == 'PASS' %} bg-green-50
-        {% elif item.status == 'FAIL' %} bg-red-50
-        {% else %} bg-yellow-50 {% endif %}">
-        <div class="flex items-start gap-3">
-          <span class="text-lg mt-0.5">
-            {% if item.status == 'PASS' %}✅
-            {% elif item.status == 'FAIL' %}❌
-            {% else %}⚠️{% endif %}
-          </span>
-          <div>
-            <p class="font-semibold text-sm">{{ item.criterion }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">{{ item.note }}</p>
-          </div>
+    {% if result.gem_specific and result.tender_type == 'GEM' %}
+    <div class="bg-purple-50 border border-purple-200 rounded-xl p-5">
+      <h2 class="font-bold text-purple-700 mb-3">🛒 GeM Specific Details</h2>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        {% if result.gem_specific.gem_bid_number %}<div><span class="text-gray-400">GeM Bid No.</span><p class="font-medium">{{ result.gem_specific.gem_bid_number }}</p></div>{% endif %}
+        <div><span class="text-gray-400">OEM Required</span><p class="font-medium">{{ 'Yes' if result.gem_specific.oem_required else 'No' }}</p></div>
+        <div><span class="text-gray-400">MSME Preference</span><p class="font-medium">{{ 'Yes' if result.gem_specific.msme_preference else 'No' }}</p></div>
+        <div><span class="text-gray-400">Startup Preference</span><p class="font-medium">{{ 'Yes' if result.gem_specific.startup_preference else 'No' }}</p></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-4">💰 Financial Requirements</h2>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-gray-50 rounded-lg p-3"><p class="text-gray-400">EMD Amount</p><p class="font-semibold mt-0.5">{{ result.financial_requirements.emd_amount }}</p></div>
+        <div class="bg-gray-50 rounded-lg p-3"><p class="text-gray-400">Performance Guarantee</p><p class="font-semibold mt-0.5">{{ result.financial_requirements.performance_guarantee }}</p></div>
+        <div class="bg-gray-50 rounded-lg p-3"><p class="text-gray-400">Payment Terms</p><p class="font-semibold mt-0.5">{{ result.financial_requirements.payment_terms }}</p></div>
+        <div class="bg-gray-50 rounded-lg p-3"><p class="text-gray-400">Working Capital Needed</p><p class="font-semibold mt-0.5">{{ result.financial_requirements.working_capital_needed }}</p></div>
+      </div>
+    </div>
+
+    {% if result.key_dates %}
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-4">📅 Key Dates</h2>
+      <div class="space-y-2">
+        {% for date in result.key_dates %}
+        <div class="flex justify-between items-center text-sm border-b pb-2 last:border-0">
+          <span class="text-gray-600">{{ date.event }}</span>
+          <span class="font-semibold">{{ date.date }}</span>
         </div>
-        <div class="text-right text-xs shrink-0">
-          <p class="text-gray-400">Required: <span class="font-medium text-gray-700">{{ item.required }}</span></p>
-          <p class="text-gray-400">You have: <span class="font-medium text-gray-700">{{ item.company_has }}</span></p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if result.documents_required %}
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-4">📁 Documents Required</h2>
+      <div class="grid md:grid-cols-2 gap-2">
+        {% for doc in result.documents_required %}
+        <div class="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+          <span class="text-gray-400">□</span> {{ doc }}
         </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- T1 Gap (QCBS only) -->
-  {% if result.t1_gap %}
-  <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
-    <h2 class="font-bold text-indigo-700 mb-2">📊 T1 Gap Analysis</h2>
-    <p class="text-sm text-gray-600">{{ result.t1_gap }}</p>
-  </div>
-  {% endif %}
-
-  <!-- L1 Strategy (L1 only) -->
-  {% if result.l1_strategy %}
-  <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
-    <h2 class="font-bold text-blue-700 mb-2">🏷️ L1 Bidding Strategy</h2>
-    <p class="text-sm text-gray-600">{{ result.l1_strategy }}</p>
-  </div>
-  {% endif %}
-
-  <!-- GeM Specific -->
-  {% if result.gem_specific and result.tender_type == 'GEM' %}
-  <div class="bg-purple-50 border border-purple-200 rounded-xl p-5">
-    <h2 class="font-bold text-purple-700 mb-3">🛒 GeM Specific Details</h2>
-    <div class="grid grid-cols-2 gap-3 text-sm">
-      {% if result.gem_specific.gem_bid_number %}
-      <div><span class="text-gray-400">GeM Bid No.</span><p class="font-medium">{{ result.gem_specific.gem_bid_number }}</p></div>
-      {% endif %}
-      <div><span class="text-gray-400">OEM Required</span><p class="font-medium">{{ 'Yes' if result.gem_specific.oem_required else 'No' }}</p></div>
-      <div><span class="text-gray-400">MSME Preference</span><p class="font-medium">{{ 'Yes' if result.gem_specific.msme_preference else 'No' }}</p></div>
-      <div><span class="text-gray-400">Startup Preference</span><p class="font-medium">{{ 'Yes' if result.gem_specific.startup_preference else 'No' }}</p></div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Financial Requirements -->
-  <div class="bg-white rounded-xl shadow-sm p-6">
-    <h2 class="font-bold text-lg mb-4">💰 Financial Requirements</h2>
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
-      <div class="bg-gray-50 rounded-lg p-3">
-        <p class="text-gray-400">EMD Amount</p>
-        <p class="font-semibold text-gray-800 mt-0.5">{{ result.financial_requirements.emd_amount }}</p>
-      </div>
-      <div class="bg-gray-50 rounded-lg p-3">
-        <p class="text-gray-400">Performance Guarantee</p>
-        <p class="font-semibold text-gray-800 mt-0.5">{{ result.financial_requirements.performance_guarantee }}</p>
-      </div>
-      <div class="bg-gray-50 rounded-lg p-3">
-        <p class="text-gray-400">Payment Terms</p>
-        <p class="font-semibold text-gray-800 mt-0.5">{{ result.financial_requirements.payment_terms }}</p>
-      </div>
-      <div class="bg-gray-50 rounded-lg p-3">
-        <p class="text-gray-400">Working Capital Needed</p>
-        <p class="font-semibold text-gray-800 mt-0.5">{{ result.financial_requirements.working_capital_needed }}</p>
+        {% endfor %}
       </div>
     </div>
-  </div>
+    {% endif %}
 
-  <!-- Key Dates -->
-  {% if result.key_dates %}
-  <div class="bg-white rounded-xl shadow-sm p-6">
-    <h2 class="font-bold text-lg mb-4">📅 Key Dates</h2>
-    <div class="space-y-2">
-      {% for date in result.key_dates %}
-      <div class="flex justify-between items-center text-sm border-b pb-2 last:border-0">
-        <span class="text-gray-600">{{ date.event }}</span>
-        <span class="font-semibold text-gray-800">{{ date.date }}</span>
-      </div>
-      {% endfor %}
+    {% if result.red_flags and result.red_flags|length > 0 %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-5">
+      <h2 class="font-bold text-red-700 mb-3">🚩 Red Flags</h2>
+      <ul class="space-y-2">
+        {% for flag in result.red_flags %}
+        <li class="text-sm text-red-600 flex items-start gap-2"><span>⚠️</span> {{ flag }}</li>
+        {% endfor %}
+      </ul>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Documents Required -->
-  {% if result.documents_required %}
-  <div class="bg-white rounded-xl shadow-sm p-6">
-    <h2 class="font-bold text-lg mb-4">📁 Documents Required</h2>
-    <div class="grid md:grid-cols-2 gap-2">
-      {% for doc in result.documents_required %}
-      <div class="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
-        <span class="text-gray-400">□</span> {{ doc }}
-      </div>
-      {% endfor %}
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-3">💡 Recommendations</h2>
+      <ul class="space-y-3">
+        {% for rec in result.recommendations %}
+        <li class="flex items-start gap-3 text-sm text-gray-600 bg-indigo-50 rounded-lg px-4 py-3">
+          <span class="text-indigo-500 font-bold mt-0.5">→</span> {{ rec }}
+        </li>
+        {% endfor %}
+      </ul>
     </div>
+
+    <div class="bg-gray-50 rounded-xl p-5">
+      <h2 class="font-bold text-lg mb-2">📝 Summary</h2>
+      <p class="text-sm text-gray-600 leading-relaxed">{{ result.summary }}</p>
+    </div>
+
+    <a href="/analyze" class="block text-center bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+      Analyze Another Tender
+    </a>
   </div>
   {% endif %}
+</div>
 
-  <!-- Red Flags -->
-  {% if result.red_flags and result.red_flags|length > 0 %}
-  <div class="bg-red-50 border border-red-200 rounded-xl p-5">
-    <h2 class="font-bold text-red-700 mb-3">🚩 Red Flags</h2>
-    <ul class="space-y-2">
-      {% for flag in result.red_flags %}
-      <li class="text-sm text-red-600 flex items-start gap-2">
-        <span class="mt-0.5">⚠️</span> {{ flag }}
-      </li>
-      {% endfor %}
-    </ul>
+
+<!-- ── Questions Modal ─────────────────────────────────────── -->
+{% if show_questions and questions_data %}
+<div id="questionsModal"
+  class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-8">
+
+    <div class="mb-6">
+      <p class="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">Tender Detected</p>
+      <h2 class="text-xl font-bold text-gray-800">{{ questions_data.tender_title }}</h2>
+      <p class="text-sm text-gray-400 mt-1">
+        Type: <span class="font-medium text-indigo-600">{{ questions_data.tender_type }}</span>
+      </p>
+    </div>
+
+    <div class="bg-indigo-50 rounded-lg p-4 mb-6 text-sm text-indigo-700">
+      <p class="font-semibold mb-1">📋 A few quick questions</p>
+      <p class="text-indigo-600">We need a bit more information to complete your analysis accurately. Please answer all questions below.</p>
+    </div>
+
+    <form method="POST" id="answersForm">
+      <input type="hidden" name="step" value="answers"/>
+
+      <div class="space-y-5">
+        {% for q in questions_data.questions %}
+        <div class="border rounded-xl p-4 bg-gray-50">
+          <label class="block font-medium text-sm text-gray-800 mb-1">
+            {{ loop.index }}. {{ q.question }}
+          </label>
+          <p class="text-xs text-gray-400 mb-3">{{ q.why_needed }}</p>
+
+          {% if q.input_type == 'yes_no' or q.input_type == 'select' %}
+            <div class="flex flex-wrap gap-2">
+              {% for option in q.options %}
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio"
+                  name="answer_{{ q.question | replace(' ', '_') | truncate(40, True, '') }}"
+                  value="{{ option }}"
+                  class="text-indigo-600"/>
+                <span class="text-sm bg-white border rounded-lg px-3 py-1.5 hover:border-indigo-400 cursor-pointer">
+                  {{ option }}
+                </span>
+              </label>
+              {% endfor %}
+            </div>
+
+          {% elif q.input_type == 'number' %}
+            <input type="number"
+              name="answer_{{ q.question | replace(' ', '_') | truncate(40, True, '') }}"
+              placeholder="Enter number"
+              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+
+          {% else %}
+            <input type="text"
+              name="answer_{{ q.question | replace(' ', '_') | truncate(40, True, '') }}"
+              placeholder="Your answer"
+              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <button type="submit" id="submitAnswersBtn"
+        class="w-full mt-6 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+        Generate Full Analysis →
+      </button>
+    </form>
   </div>
-  {% endif %}
-
-  <!-- Recommendations -->
-  <div class="bg-white rounded-xl shadow-sm p-6">
-    <h2 class="font-bold text-lg mb-3">💡 Recommendations</h2>
-    <ul class="space-y-3">
-      {% for rec in result.recommendations %}
-      <li class="flex items-start gap-3 text-sm text-gray-600 bg-indigo-50 rounded-lg px-4 py-3">
-        <span class="text-indigo-500 font-bold mt-0.5">→</span> {{ rec }}
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  <!-- Summary -->
-  <div class="bg-gray-50 rounded-xl p-5">
-    <h2 class="font-bold text-lg mb-2">📝 Summary</h2>
-    <p class="text-sm text-gray-600 leading-relaxed">{{ result.summary }}</p>
-  </div>
-
-  <!-- Analyze Another -->
-  <a href="/analyze" class="block text-center bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
-    Analyze Another Tender
-  </a>
-
 </div>
 {% endif %}
-</div>
 
-<!-- Loading state -->
+<!-- Loading states -->
 <script>
-  document.getElementById("analyzeForm")?.addEventListener("submit", function () {
-    const btn = document.getElementById("submitBtn");
-    btn.textContent = "Analyzing... please wait ⏳";
+  document.getElementById("uploadForm")?.addEventListener("submit", function () {
+    const btn = document.getElementById("uploadBtn");
+    btn.textContent = "Reading tender... ⏳";
     btn.disabled = true;
     btn.classList.add("opacity-70", "cursor-not-allowed");
   });
+
+  document.getElementById("answersForm")?.addEventListener("submit", function () {
+    const btn = document.getElementById("submitAnswersBtn");
+    btn.textContent = "Generating full analysis... ⏳";
+    btn.disabled = true;
+    btn.classList.add("opacity-70", "cursor-not-allowed");
+    // Close modal feel
+    document.getElementById("questionsModal").style.background = "rgba(0,0,0,0.8)";
+  });
 </script>
+
 {% endblock %}
