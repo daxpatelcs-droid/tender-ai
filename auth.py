@@ -130,18 +130,24 @@ def save_tender_analysis(user_id, data):
     try:
         admin = get_admin_client()
         record = {
-            "user_id": user_id,
-            "project_name": data.get("project_name", "Unknown Project"),
-            "project_value": float(data.get("project_value", 0) or 0),
-            "location": data.get("location", ""),
-            "deadline": data.get("deadline", ""),
-            "required_turnover": float(data.get("required_turnover", 0) or 0),
-            "required_experience": int(data.get("required_experience", 0) or 0),
-            "eligibility_score": int(data.get("eligibility_score", 0) or 0),
-            "difficulty_score": int(data.get("difficulty_score", 0) or 0),
-            "summary": data.get("summary", ""),
-            "recommendations": data.get("recommendations", []),
-        }
+           "user_id": user_id,
+           "project_name": data.get("project_name", "Unknown Project"),
+           "project_value": float(data.get("project_value", 0) or 0),
+           "location": data.get("location", ""),
+           "deadline": data.get("deadline", ""),
+           "required_turnover": float(data.get("required_turnover", 0) or 0),
+           "required_experience": int(data.get("required_experience", 0) or 0),
+           "eligibility_score": int(data.get("eligibility_score", 0) or 0),
+           "difficulty_score": int(data.get("difficulty_score", 5) or 5),
+           "summary": data.get("summary", ""),
+           "recommendations": data.get("recommendations", []),
+           "tender_type": data.get("tender_type", ""),
+           "overall_eligibility": data.get("overall_eligibility", ""),
+           "bid_recommendation": data.get("bid_recommendation", ""),
+           "eligibility_criteria": data.get("eligibility_criteria", []),
+           "documents_required": data.get("documents_required", []),
+           "red_flags": data.get("red_flags", []),
+                }
         admin.table("tender_history").insert(record).execute()
         return {"success": True}
     except Exception as e:
