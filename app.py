@@ -1,7 +1,8 @@
 import os
+import json
+import tempfile
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from dotenv import load_dotenv
-import tempfile
 
 load_dotenv()  # loads .env for local development
 
@@ -14,7 +15,21 @@ from auth import (
 from analyzer import extract_text_from_pdf, extract_questions, analyze_tender, format_pages_for_prompt
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "tender-ai-secret-2024")
+
+# ── Secret key ────────────────────────────────────────────────
+# SECRET_KEY must be set as an environment variable on Render.
+# The fallback below is intentionally loud so a missing env var
+# is obvious in logs rather than silently using a weak key.
+_secret = os.environ.get("SECRET_KEY")
+if not _secret:
+    import warnings
+    warnings.warn(
+        "SECRET_KEY environment variable is not set. "
+        "Using an insecure fallback — set SECRET_KEY on Render immediately.",
+        stacklevel=2
+    )
+    _secret = "tender-ai-secret-2024-INSECURE-FALLBACK"
+app.secret_key = _secret
 
 
 # ── Helper ────────────────────────────────────────────────────
@@ -132,10 +147,6 @@ def dashboard():
                            **stats)
 
 
-import tempfile
-import os
-import json
-
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
     redir = require_login()
@@ -239,11 +250,11 @@ def analyze():
         # Second AI call with verified citations
         result = analyze_tender(pdf_text, analysis_profile, answers, pages=pdf_pages)
 
-        # Clean up temp file
+        # Clean up temp file — log if it fails so it doesn't go silently missing
         try:
             os.unlink(data_file)
-        except:
-            pass
+        except OSError as e:
+            print(f"[app] Warning: could not delete temp file {data_file}: {e}")
 
         session.pop("data_file", None)
         session.pop("analysis_profile", None)
@@ -259,6 +270,7 @@ def analyze():
                                result=result["data"])
 
     return render_template("analyze.html", profile=profile)
+
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():

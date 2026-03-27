@@ -2,47 +2,567 @@
 {% block title %}Analyze Tender — Tender AI{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-10">
-  <h1 class="text-3xl font-bold mb-1">Analyze a Tender</h1>
-  <p class="text-gray-400 text-sm mb-8">Upload a tender PDF and get instant AI-powered analysis</p>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-  <!-- Upload Form (Step 1) -->
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #112240;
+    --blue: #1e6fe8;
+    --blue-light: #3b8bff;
+    --surface: #f4f7fd;
+    --white: #ffffff;
+    --border: #dde4f0;
+    --text: #0a1628;
+    --muted: #5a6a8a;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #d97706;
+    --yellow-bg: #fffbeb;
+    --yellow-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --indigo: #4f46e5;
+    --indigo-bg: #eef2ff;
+    --indigo-border: #c7d2fe;
+  }
+
+  .az-page {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    min-height: 100vh;
+  }
+
+  .az-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Page header ── */
+  .az-header {
+    margin-bottom: 36px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .az-header h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .az-header p {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  /* ── Upload card ── */
+  .upload-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 24px rgba(10,22,40,0.06);
+    animation: fadeUp 0.5s 0.1s ease both;
+  }
+
+  .field-label {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .file-input {
+    width: 100%;
+    border: 2px dashed #93c5fd;
+    border-radius: 14px;
+    padding: 32px 16px;
+    font-size: 0.88rem;
+    color: var(--muted);
+    cursor: pointer;
+    background: #f8fbff;
+    transition: border-color 0.2s, background 0.2s;
+    display: block;
+    box-sizing: border-box;
+  }
+  .file-input:hover { border-color: var(--blue); background: #eef4ff; }
+
+  .override-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: block;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .override-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .field-group label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .text-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+  }
+  .text-input:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(30,111,232,0.1);
+  }
+
+  .profile-banner {
+    background: var(--indigo-bg);
+    border: 1px solid var(--indigo-border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .profile-banner-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--indigo);
+    margin-bottom: 4px;
+  }
+  .profile-banner p { font-size: 0.85rem; color: var(--muted); }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .submit-btn:hover { background: var(--blue-light); transform: translateY(-1px); }
+  .submit-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+  /* ── Divider between sections ── */
+  .section-gap { height: 24px; }
+
+  /* ── Result sections ── */
+  .results-wrap { display: flex; flex-direction: column; gap: 20px; animation: fadeUp 0.5s ease both; }
+
+  /* Bid banner */
+  .bid-banner {
+    border-radius: 18px;
+    padding: 28px 32px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border: 2px solid;
+  }
+  .bid-banner.bid-go   { background: var(--green-bg);  border-color: #4ade80; }
+  .bid-banner.bid-warn { background: var(--yellow-bg); border-color: #fbbf24; }
+  .bid-banner.bid-no   { background: var(--red-bg);    border-color: #f87171; }
+
+  .bid-left p.bb-label  { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+  .bid-left .bb-type    { font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--text); line-height: 1.1; margin-bottom: 4px; }
+  .bid-left .bb-reason  { font-size: 0.78rem; color: var(--muted); }
+
+  .bb-citation { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .cite-page  { font-size: 0.75rem; font-weight: 700; color: var(--blue); }
+  .cite-dot   { font-size: 0.75rem; color: #d1d5db; }
+  .cite-line  { font-size: 0.75rem; color: var(--muted); }
+  .cite-sec   { font-size: 0.75rem; color: var(--blue-light); }
+  .cite-quote { font-size: 0.75rem; color: var(--muted); font-style: italic; margin-top: 2px; }
+  .cite-none  { font-size: 0.75rem; color: #9ca3af; }
+
+  .bid-right { text-align: center; }
+  .bid-right p.bb-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+  .bid-verdict { font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
+  .bid-verdict.go   { color: var(--green); }
+  .bid-verdict.warn { color: var(--yellow); }
+  .bid-verdict.no   { color: var(--red); }
+  .bid-right .bb-reason { font-size: 0.78rem; color: var(--muted); max-width: 260px; margin-top: 4px; }
+
+  /* Scores row */
+  .scores-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .score-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(10,22,40,0.04);
+  }
+  .score-card .sc-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+  .score-card .sc-value { font-family: 'Sora', sans-serif; font-size: 2.4rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .score-card .sc-sub   { font-size: 0.75rem; }
+  .sc-value.green  { color: var(--green); }
+  .sc-value.yellow { color: var(--yellow); }
+  .sc-value.red    { color: var(--red); }
+  .sc-value.indigo { color: var(--indigo); }
+  .sc-value.gray   { color: #374151; }
+  .sc-sub.green  { color: var(--green); }
+  .sc-sub.yellow { color: var(--yellow); }
+  .sc-sub.red    { color: var(--red); }
+  .sc-sub.gray   { color: var(--muted); }
+
+  /* Generic result card */
+  .res-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 16px rgba(10,22,40,0.05);
+  }
+  .res-card h2 {
+    font-family: 'Sora', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .res-card .res-subtitle { font-size: 0.84rem; color: var(--muted); margin-bottom: 20px; }
+
+  /* Eligibility item */
+  .elig-item {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid;
+    margin-bottom: 12px;
+  }
+  .elig-item:last-child { margin-bottom: 0; }
+  .elig-item.pass  { border-color: var(--green-border); }
+  .elig-item.fail  { border-color: var(--red-border); }
+  .elig-item.warn  { border-color: var(--yellow-border); }
+
+  .elig-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+  }
+  .elig-main.pass { background: var(--green-bg); }
+  .elig-main.fail { background: var(--red-bg); }
+  .elig-main.warn { background: var(--yellow-bg); }
+
+  .elig-left { display: flex; align-items: flex-start; gap: 12px; }
+  .elig-icon { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+  .elig-criterion { font-family: 'Sora', sans-serif; font-size: 0.87rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .elig-note { font-size: 0.78rem; color: var(--muted); }
+  .elig-right { text-align: right; font-size: 0.75rem; flex-shrink: 0; }
+  .elig-right p { color: var(--muted); margin-bottom: 2px; }
+  .elig-right span { font-weight: 600; color: var(--text); }
+
+  .cite-row {
+    padding: 10px 18px;
+    background: var(--white);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Colored info cards */
+  .info-card {
+    border-radius: 16px;
+    padding: 22px 26px;
+  }
+  .info-card.indigo { background: var(--indigo-bg); border: 1px solid var(--indigo-border); }
+  .info-card.blue   { background: #eff6ff;          border: 1px solid #bfdbfe; }
+  .info-card.purple { background: #faf5ff;          border: 1px solid #e9d5ff; }
+  .info-card.red    { background: var(--red-bg);    border: 1px solid var(--red-border); }
+  .info-card.gray   { background: #f9fafb;          border: 1px solid #e5e7eb; }
+
+  .info-card h2 {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .info-card.indigo h2 { color: var(--indigo); }
+  .info-card.blue   h2 { color: #1d4ed8; }
+  .info-card.purple h2 { color: #7e22ce; }
+  .info-card.red    h2 { color: var(--red); }
+  .info-card.gray   h2 { color: var(--text); }
+
+  .info-card p  { font-size: 0.88rem; color: #4b5563; line-height: 1.65; }
+
+  /* GeM grid */
+  .gem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .gem-item .gem-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 3px; }
+  .gem-item .gem-val   { font-family: 'Sora', sans-serif; font-size: 0.88rem; font-weight: 600; color: var(--text); }
+
+  /* Border item (financial / dates / docs / flags) */
+  .border-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .border-item:last-child { margin-bottom: 0; }
+
+  .bi-main {
+    background: #f9fafb;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .bi-main .bi-label { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+  .bi-main .bi-value { font-family: 'Sora', sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--text); }
+
+  .bi-simple {
+    background: #f9fafb;
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .bi-simple:last-child { margin-bottom: 0; }
+  .bi-simple .bi-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
+  .bi-simple .bi-value { font-family: 'Sora', sans-serif; font-size: 0.88rem; font-weight: 600; color: var(--text); }
+
+  /* Date item */
+  .date-main {
+    background: #f9fafb;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .date-event { font-size: 0.87rem; color: var(--text); font-weight: 500; }
+  .date-val   { font-family: 'Sora', sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--indigo); }
+
+  /* Doc item */
+  .doc-main {
+    background: #f9fafb;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .doc-check { color: #9ca3af; font-size: 0.9rem; }
+  .doc-name  { font-size: 0.87rem; font-weight: 500; color: var(--text); }
+
+  /* Flag item */
+  .flag-item { border: 1px solid var(--red-border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+  .flag-item:last-child { margin-bottom: 0; }
+  .flag-main { background: var(--red-bg); padding: 13px 16px; display: flex; align-items: flex-start; gap: 10px; }
+  .flag-text  { font-size: 0.87rem; color: #b91c1c; line-height: 1.5; }
+
+  /* Recommendations */
+  .rec-list { display: flex; flex-direction: column; gap: 10px; }
+  .rec-item {
+    background: var(--indigo-bg);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: #374151;
+    line-height: 1.55;
+  }
+  .rec-arrow { color: var(--indigo); font-weight: 800; margin-top: 1px; flex-shrink: 0; }
+
+  /* Analyze another */
+  .analyze-again {
+    display: block;
+    text-align: center;
+    background: var(--blue);
+    color: var(--white);
+    padding: 15px;
+    border-radius: 12px;
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .analyze-again:hover { background: var(--blue-light); transform: translateY(-1px); }
+
+  /* ── Questions Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-box {
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: 0 32px 80px rgba(10,22,40,0.22);
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 40px;
+  }
+  .modal-eyebrow {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 6px;
+  }
+  .modal-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .modal-type { font-size: 0.85rem; color: var(--muted); margin-bottom: 24px; }
+  .modal-type span { font-weight: 600; color: var(--blue); }
+
+  .modal-info {
+    background: var(--indigo-bg);
+    border: 1px solid var(--indigo-border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .modal-info-title { font-family: 'Sora', sans-serif; font-size: 0.82rem; font-weight: 700; color: var(--indigo); margin-bottom: 4px; }
+  .modal-info p     { font-size: 0.84rem; color: #4338ca; line-height: 1.55; }
+
+  .q-item {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: #f9fafb;
+    margin-bottom: 14px;
+  }
+  .q-item:last-child { margin-bottom: 0; }
+  .q-label {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.87rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .q-why { font-size: 0.78rem; color: var(--muted); margin-bottom: 14px; }
+
+  .q-options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .q-option-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .q-option-label input[type="radio"] { accent-color: var(--blue); }
+  .q-option-text {
+    font-size: 0.85rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    transition: border-color 0.2s;
+  }
+  .q-option-label:hover .q-option-text { border-color: var(--blue); }
+
+  .q-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--white);
+    color: var(--text);
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .q-input:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(30,111,232,0.1);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .override-grid { grid-template-columns: 1fr; }
+    .scores-row { grid-template-columns: 1fr 1fr; }
+    .bid-banner { flex-direction: column; }
+    .gem-grid { grid-template-columns: 1fr; }
+    .upload-card, .res-card, .modal-box { padding: 24px 20px; }
+  }
+</style>
+
+<div class="az-page">
+<div class="az-wrap">
+
+  <div class="az-header">
+    <h1>Analyze a Tender</h1>
+    <p>Upload a tender PDF and get instant AI-powered analysis</p>
+  </div>
+
+  <!-- ── Upload Form (Step 1) ── -->
   {% if not result and not show_questions %}
-  <div class="bg-white rounded-2xl shadow-sm p-8 mb-8">
+  <div class="upload-card">
     <form method="POST" enctype="multipart/form-data" id="uploadForm">
       <input type="hidden" name="step" value="upload"/>
 
-      <div class="mb-6">
-        <label class="block font-semibold mb-2">Upload Tender PDF *</label>
-        <input type="file" name="pdf_file" accept=".pdf" required
-          class="w-full border-2 border-dashed border-indigo-300 rounded-xl px-4 py-8 text-sm text-gray-500 cursor-pointer hover:border-indigo-500 focus:outline-none"/>
+      <div style="margin-bottom:28px;">
+        <label class="field-label">Upload Tender PDF *</label>
+        <input type="file" name="pdf_file" accept=".pdf" required class="file-input"/>
       </div>
 
-      <div class="mb-6">
-        <p class="font-semibold mb-2 text-sm text-gray-500">Override Profile (optional)</p>
-        <div class="grid md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm mb-1">Domain Override</label>
-            <input type="text" name="override_domain" placeholder="e.g. IT, Construction"
-              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+      <div style="margin-bottom:28px;">
+        <span class="override-label">Override Profile (optional)</span>
+        <div class="override-grid">
+          <div class="field-group">
+            <label>Domain Override</label>
+            <input type="text" name="override_domain" placeholder="e.g. IT, Construction" class="text-input"/>
           </div>
-          <div>
-            <label class="block text-sm mb-1">Turnover Override (₹ Lakhs)</label>
-            <input type="number" name="override_turnover"
-              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+          <div class="field-group">
+            <label>Turnover Override (₹ Lakhs)</label>
+            <input type="number" name="override_turnover" class="text-input"/>
           </div>
         </div>
       </div>
 
       {% if profile %}
-      <div class="bg-indigo-50 rounded-lg p-4 text-sm mb-6">
-        <p class="font-semibold text-indigo-700 mb-1">Using your saved profile:</p>
-        <p class="text-gray-600">{{ profile.company_name }} · {{ profile.domain }} · ₹{{ profile.turnover }} Lakhs · {{ profile.experience }} yrs</p>
+      <div class="profile-banner" style="margin-bottom:24px;">
+        <p class="profile-banner-title">Using your saved profile:</p>
+        <p>{{ profile.company_name }} · {{ profile.domain }} · ₹{{ profile.turnover }} Lakhs · {{ profile.experience }} yrs</p>
       </div>
       {% endif %}
 
-      <button type="submit" id="uploadBtn"
-        class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+      <button type="submit" id="uploadBtn" class="submit-btn">
         Analyze Tender
       </button>
     </form>
@@ -50,18 +570,19 @@
   {% endif %}
 
 
-  <!-- ── RESULTS ─────────────────────────────────────────────── -->
+  <!-- ── RESULTS ── -->
   {% if result %}
-  <div class="space-y-6">
+  <div class="results-wrap">
 
     <!-- Tender Type + Bid Recommendation Banner -->
-    <div class="rounded-xl p-6 flex flex-wrap items-center justify-between gap-4
-      {% if result.bid_recommendation == 'BID' %} bg-green-50 border-2 border-green-400
-      {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} bg-yellow-50 border-2 border-yellow-400
-      {% else %} bg-red-50 border-2 border-red-400 {% endif %}">
-      <div>
-        <p class="text-sm font-medium text-gray-500 mb-1">Tender Type Detected</p>
-        <p class="text-2xl font-extrabold text-gray-800">
+    <div class="bid-banner
+      {% if result.bid_recommendation == 'BID' %}bid-go
+      {% elif result.bid_recommendation == 'CONDITIONAL_BID' %}bid-warn
+      {% else %}bid-no{% endif %}">
+
+      <div class="bid-left">
+        <p class="bb-label">Tender Type Detected</p>
+        <p class="bb-type">
           {% if result.tender_type == 'L1' %}🏷️ L1 — Lowest Bidder
           {% elif result.tender_type == 'QCBS' %}📊 QCBS — Quality + Cost
           {% elif result.tender_type == 'REVERSE_AUCTION' %}🔨 Reverse Auction
@@ -69,130 +590,125 @@
           {% elif result.tender_type == 'DIRECT' %}📋 Direct / Nomination
           {% else %}{{ result.tender_type }}{% endif %}
         </p>
-        <p class="text-xs text-gray-400 mt-1">{{ result.tender_type_reason }}</p>
+        <p class="bb-reason">{{ result.tender_type_reason }}</p>
 
-        <!-- Tender type citation -->
         {% if result.tender_type_citation and result.tender_type_citation.found %}
-        <div class="mt-2 flex flex-wrap items-center gap-1">
-          <span class="text-indigo-500 text-xs font-semibold">📄 Page {{ result.tender_type_citation.page }}</span>
+        <div class="bb-citation">
+          <span class="cite-page">📄 Page {{ result.tender_type_citation.page }}</span>
           {% if result.tender_type_citation.line %}
-          <span class="text-gray-300 text-xs">·</span>
-          <span class="text-gray-400 text-xs">Line {{ result.tender_type_citation.line }}</span>
+          <span class="cite-dot">·</span>
+          <span class="cite-line">Line {{ result.tender_type_citation.line }}</span>
           {% endif %}
           {% if result.tender_type_citation.section %}
-          <span class="text-gray-300 text-xs">·</span>
-          <span class="text-indigo-400 text-xs">§ {{ result.tender_type_citation.section }}</span>
+          <span class="cite-dot">·</span>
+          <span class="cite-sec">§ {{ result.tender_type_citation.section }}</span>
           {% endif %}
         </div>
         {% if result.tender_type_citation.quote %}
-        <p class="text-xs text-gray-500 italic mt-0.5">"{{ result.tender_type_citation.quote }}"</p>
+        <p class="cite-quote">"{{ result.tender_type_citation.quote }}"</p>
         {% endif %}
         {% endif %}
       </div>
 
-      <div class="text-center">
-        <p class="text-sm font-medium text-gray-500 mb-1">Bid Recommendation</p>
-        <span class="text-2xl font-extrabold
-          {% if result.bid_recommendation == 'BID' %} text-green-600
-          {% elif result.bid_recommendation == 'CONDITIONAL_BID' %} text-yellow-600
-          {% else %} text-red-600 {% endif %}">
+      <div class="bid-right">
+        <p class="bb-label">Bid Recommendation</p>
+        <p class="bid-verdict
+          {% if result.bid_recommendation == 'BID' %}go
+          {% elif result.bid_recommendation == 'CONDITIONAL_BID' %}warn
+          {% else %}no{% endif %}">
           {% if result.bid_recommendation == 'BID' %}✅ BID
           {% elif result.bid_recommendation == 'CONDITIONAL_BID' %}⚠️ CONDITIONAL BID
           {% else %}❌ DO NOT BID{% endif %}
-        </span>
-        <p class="text-xs text-gray-400 mt-1 max-w-xs">{{ result.bid_recommendation_reason }}</p>
+        </p>
+        <p class="bb-reason">{{ result.bid_recommendation_reason }}</p>
       </div>
     </div>
 
     <!-- Scores Row -->
-    <div class="grid md:grid-cols-3 gap-4">
-      <div class="bg-white rounded-xl shadow-sm p-5 text-center">
-        <p class="text-sm text-gray-400 mb-1">Eligibility Score</p>
-        <p class="text-4xl font-extrabold
-          {% if result.eligibility_score >= 70 %} text-green-500
-          {% elif result.eligibility_score >= 40 %} text-yellow-500
-          {% else %} text-red-500 {% endif %}">
+    <div class="scores-row">
+      <div class="score-card">
+        <p class="sc-label">Eligibility Score</p>
+        <p class="sc-value
+          {% if result.eligibility_score >= 70 %}green
+          {% elif result.eligibility_score >= 40 %}yellow
+          {% else %}red{% endif %}">
           {{ result.eligibility_score }}%
         </p>
-        <p class="text-xs mt-1
-          {% if result.overall_eligibility == 'ELIGIBLE' %} text-green-500
-          {% elif result.overall_eligibility == 'PARTIALLY_ELIGIBLE' %} text-yellow-500
-          {% else %} text-red-500 {% endif %}">
+        <p class="sc-sub
+          {% if result.overall_eligibility == 'ELIGIBLE' %}green
+          {% elif result.overall_eligibility == 'PARTIALLY_ELIGIBLE' %}yellow
+          {% else %}red{% endif %}">
           {{ result.overall_eligibility | replace('_', ' ') }}
         </p>
       </div>
 
       {% if result.t_score_estimate %}
-      <div class="bg-white rounded-xl shadow-sm p-5 text-center">
-        <p class="text-sm text-gray-400 mb-1">Technical Score (T)</p>
-        <p class="text-4xl font-extrabold text-indigo-600">
-          {{ result.t_score_estimate }}<span class="text-xl text-gray-300">/100</span>
+      <div class="score-card">
+        <p class="sc-label">Technical Score (T)</p>
+        <p class="sc-value indigo">
+          {{ result.t_score_estimate }}<span style="font-size:1.2rem;color:#d1d5db;font-weight:400;">/100</span>
         </p>
         {% if result.qcbs_ratio %}
-        <p class="text-xs text-gray-400 mt-1">QCBS Ratio: {{ result.qcbs_ratio }}</p>
+        <p class="sc-sub gray">QCBS Ratio: {{ result.qcbs_ratio }}</p>
         {% endif %}
       </div>
       {% endif %}
 
-      <div class="bg-white rounded-xl shadow-sm p-5 text-center">
-        <p class="text-sm text-gray-400 mb-1">Project Value</p>
-        <p class="text-2xl font-extrabold text-gray-700">
-          ₹{{ result.project_value }}<span class="text-sm font-normal text-gray-400"> L</span>
-        </p>
-        <p class="text-xs text-gray-400 mt-1">{{ result.location or '—' }}</p>
+      <div class="score-card">
+        <p class="sc-label">Project Value</p>
+        <p class="sc-value gray" style="font-size:1.6rem;">₹{{ result.project_value }}<span style="font-size:0.85rem;color:#9ca3af;font-weight:400;"> L</span></p>
+        <p class="sc-sub gray">{{ result.location or '—' }}</p>
       </div>
     </div>
 
-    <!-- Eligibility Checklist with Citations -->
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="font-bold text-lg mb-1">Eligibility Checklist</h2>
-      <p class="text-sm text-gray-400 mb-4">{{ result.eligibility_summary }}</p>
-      <div class="space-y-3">
+    <!-- Eligibility Checklist -->
+    <div class="res-card">
+      <h2>Eligibility Checklist</h2>
+      <p class="res-subtitle">{{ result.eligibility_summary }}</p>
+      <div>
         {% for item in result.eligibility_criteria %}
-        <div class="rounded-xl overflow-hidden border
-          {% if item.status == 'PASS' %} border-green-200
-          {% elif item.status == 'FAIL' %} border-red-200
-          {% else %} border-yellow-200 {% endif %}">
+        <div class="elig-item
+          {% if item.status == 'PASS' %}pass
+          {% elif item.status == 'FAIL' %}fail
+          {% else %}warn{% endif %}">
 
-          <!-- Main row -->
-          <div class="flex items-start justify-between gap-4 p-4
-            {% if item.status == 'PASS' %} bg-green-50
-            {% elif item.status == 'FAIL' %} bg-red-50
-            {% else %} bg-yellow-50 {% endif %}">
-            <div class="flex items-start gap-3">
-              <span class="text-lg mt-0.5">
+          <div class="elig-main
+            {% if item.status == 'PASS' %}pass
+            {% elif item.status == 'FAIL' %}fail
+            {% else %}warn{% endif %}">
+            <div class="elig-left">
+              <span class="elig-icon">
                 {% if item.status == 'PASS' %}✅{% elif item.status == 'FAIL' %}❌{% else %}⚠️{% endif %}
               </span>
               <div>
-                <p class="font-semibold text-sm">{{ item.criterion }}</p>
-                <p class="text-xs text-gray-500 mt-0.5">{{ item.note }}</p>
+                <p class="elig-criterion">{{ item.criterion }}</p>
+                <p class="elig-note">{{ item.note }}</p>
               </div>
             </div>
-            <div class="text-right text-xs shrink-0">
-              <p class="text-gray-400">Required: <span class="font-medium text-gray-700">{{ item.required }}</span></p>
-              <p class="text-gray-400">You have: <span class="font-medium text-gray-700">{{ item.company_has }}</span></p>
+            <div class="elig-right">
+              <p>Required: <span>{{ item.required }}</span></p>
+              <p>You have: <span>{{ item.company_has }}</span></p>
             </div>
           </div>
 
-          <!-- Citation row -->
-          <div class="px-4 py-2 bg-white border-t">
+          <div class="cite-row">
             {% if item.citation and item.citation.found %}
-              <div class="flex flex-wrap items-center gap-1 mb-0.5">
-                <span class="text-indigo-500 text-xs font-semibold">📄 Page {{ item.citation.page }}</span>
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:2px;">
+                <span class="cite-page">📄 Page {{ item.citation.page }}</span>
                 {% if item.citation.line %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-gray-400 text-xs">Line {{ item.citation.line }}</span>
+                <span class="cite-dot">·</span>
+                <span class="cite-line">Line {{ item.citation.line }}</span>
                 {% endif %}
                 {% if item.citation.section %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-indigo-400 text-xs">§ {{ item.citation.section }}</span>
+                <span class="cite-dot">·</span>
+                <span class="cite-sec">§ {{ item.citation.section }}</span>
                 {% endif %}
               </div>
               {% if item.citation.quote %}
-              <p class="text-xs text-gray-500 italic">"{{ item.citation.quote }}"</p>
+              <p class="cite-quote">"{{ item.citation.quote }}"</p>
               {% endif %}
             {% else %}
-              <span class="text-gray-400 text-xs">📄 Not mentioned in document</span>
+              <span class="cite-none">📄 Not mentioned in document</span>
             {% endif %}
           </div>
 
@@ -203,221 +719,229 @@
 
     <!-- T1 Gap -->
     {% if result.t1_gap %}
-    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
-      <h2 class="font-bold text-indigo-700 mb-2">📊 T1 Gap Analysis</h2>
-      <p class="text-sm text-gray-600">{{ result.t1_gap }}</p>
+    <div class="info-card indigo">
+      <h2>📊 T1 Gap Analysis</h2>
+      <p>{{ result.t1_gap }}</p>
     </div>
     {% endif %}
 
     <!-- L1 Strategy -->
     {% if result.l1_strategy %}
-    <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
-      <h2 class="font-bold text-blue-700 mb-2">🏷️ L1 Bidding Strategy</h2>
-      <p class="text-sm text-gray-600">{{ result.l1_strategy }}</p>
+    <div class="info-card blue">
+      <h2>🏷️ L1 Bidding Strategy</h2>
+      <p>{{ result.l1_strategy }}</p>
     </div>
     {% endif %}
 
     <!-- GeM Specific -->
     {% if result.gem_specific and result.tender_type == 'GEM' %}
-    <div class="bg-purple-50 border border-purple-200 rounded-xl p-5">
-      <h2 class="font-bold text-purple-700 mb-3">🛒 GeM Specific Details</h2>
-      <div class="grid grid-cols-2 gap-3 text-sm">
+    <div class="info-card purple">
+      <h2>🛒 GeM Specific Details</h2>
+      <div class="gem-grid">
         {% if result.gem_specific.gem_bid_number %}
-        <div><span class="text-gray-400">GeM Bid No.</span><p class="font-medium">{{ result.gem_specific.gem_bid_number }}</p></div>
+        <div class="gem-item">
+          <p class="gem-label">GeM Bid No.</p>
+          <p class="gem-val">{{ result.gem_specific.gem_bid_number }}</p>
+        </div>
         {% endif %}
-        <div><span class="text-gray-400">OEM Required</span><p class="font-medium">{{ 'Yes' if result.gem_specific.oem_required else 'No' }}</p></div>
-        <div><span class="text-gray-400">MSME Preference</span><p class="font-medium">{{ 'Yes' if result.gem_specific.msme_preference else 'No' }}</p></div>
-        <div><span class="text-gray-400">Startup Preference</span><p class="font-medium">{{ 'Yes' if result.gem_specific.startup_preference else 'No' }}</p></div>
+        <div class="gem-item">
+          <p class="gem-label">OEM Required</p>
+          <p class="gem-val">{{ 'Yes' if result.gem_specific.oem_required else 'No' }}</p>
+        </div>
+        <div class="gem-item">
+          <p class="gem-label">MSME Preference</p>
+          <p class="gem-val">{{ 'Yes' if result.gem_specific.msme_preference else 'No' }}</p>
+        </div>
+        <div class="gem-item">
+          <p class="gem-label">Startup Preference</p>
+          <p class="gem-val">{{ 'Yes' if result.gem_specific.startup_preference else 'No' }}</p>
+        </div>
       </div>
     </div>
     {% endif %}
 
-    <!-- Financial Requirements with Citations -->
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="font-bold text-lg mb-4">💰 Financial Requirements</h2>
-      <div class="space-y-3">
+    <!-- Financial Requirements -->
+    <div class="res-card">
+      <h2>💰 Financial Requirements</h2>
+      <div class="section-gap" style="height:16px;"></div>
 
-        <!-- EMD -->
-        <div class="border rounded-xl overflow-hidden">
-          <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
-            <span class="text-sm text-gray-500">EMD Amount</span>
-            <span class="font-semibold text-sm">{{ result.financial_requirements.emd_amount }}</span>
-          </div>
-          <div class="px-4 py-2 bg-white border-t">
-            {% if result.financial_requirements.emd_citation and result.financial_requirements.emd_citation.found %}
-              <div class="flex flex-wrap items-center gap-1 mb-0.5">
-                <span class="text-indigo-500 text-xs font-semibold">📄 Page {{ result.financial_requirements.emd_citation.page }}</span>
-                {% if result.financial_requirements.emd_citation.line %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-gray-400 text-xs">Line {{ result.financial_requirements.emd_citation.line }}</span>
-                {% endif %}
-                {% if result.financial_requirements.emd_citation.section %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-indigo-400 text-xs">§ {{ result.financial_requirements.emd_citation.section }}</span>
-                {% endif %}
-              </div>
-              {% if result.financial_requirements.emd_citation.quote %}
-              <p class="text-xs text-gray-500 italic">"{{ result.financial_requirements.emd_citation.quote }}"</p>
+      <!-- EMD -->
+      <div class="border-item">
+        <div class="bi-main">
+          <span class="bi-label">EMD Amount</span>
+          <span class="bi-value">{{ result.financial_requirements.emd_amount }}</span>
+        </div>
+        <div class="cite-row">
+          {% if result.financial_requirements.emd_citation and result.financial_requirements.emd_citation.found %}
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:2px;">
+              <span class="cite-page">📄 Page {{ result.financial_requirements.emd_citation.page }}</span>
+              {% if result.financial_requirements.emd_citation.line %}
+              <span class="cite-dot">·</span>
+              <span class="cite-line">Line {{ result.financial_requirements.emd_citation.line }}</span>
               {% endif %}
-            {% else %}
-              <span class="text-gray-400 text-xs">📄 Not mentioned in document</span>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Performance Guarantee -->
-        <div class="border rounded-xl overflow-hidden">
-          <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
-            <span class="text-sm text-gray-500">Performance Guarantee</span>
-            <span class="font-semibold text-sm">{{ result.financial_requirements.performance_guarantee }}</span>
-          </div>
-          <div class="px-4 py-2 bg-white border-t">
-            {% if result.financial_requirements.pg_citation and result.financial_requirements.pg_citation.found %}
-              <div class="flex flex-wrap items-center gap-1 mb-0.5">
-                <span class="text-indigo-500 text-xs font-semibold">📄 Page {{ result.financial_requirements.pg_citation.page }}</span>
-                {% if result.financial_requirements.pg_citation.line %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-gray-400 text-xs">Line {{ result.financial_requirements.pg_citation.line }}</span>
-                {% endif %}
-                {% if result.financial_requirements.pg_citation.section %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-indigo-400 text-xs">§ {{ result.financial_requirements.pg_citation.section }}</span>
-                {% endif %}
-              </div>
-              {% if result.financial_requirements.pg_citation.quote %}
-              <p class="text-xs text-gray-500 italic">"{{ result.financial_requirements.pg_citation.quote }}"</p>
+              {% if result.financial_requirements.emd_citation.section %}
+              <span class="cite-dot">·</span>
+              <span class="cite-sec">§ {{ result.financial_requirements.emd_citation.section }}</span>
               {% endif %}
-            {% else %}
-              <span class="text-gray-400 text-xs">📄 Not mentioned in document</span>
+            </div>
+            {% if result.financial_requirements.emd_citation.quote %}
+            <p class="cite-quote">"{{ result.financial_requirements.emd_citation.quote }}"</p>
             {% endif %}
-          </div>
-        </div>
-
-        <!-- Payment Terms -->
-        <div class="bg-gray-50 rounded-lg p-3">
-          <p class="text-gray-400 text-sm">Payment Terms</p>
-          <p class="font-semibold text-sm mt-0.5">{{ result.financial_requirements.payment_terms }}</p>
-        </div>
-
-        <!-- Working Capital -->
-        <div class="bg-gray-50 rounded-lg p-3">
-          <p class="text-gray-400 text-sm">Working Capital Needed</p>
-          <p class="font-semibold text-sm mt-0.5">{{ result.financial_requirements.working_capital_needed }}</p>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- Key Dates with Citations -->
-    {% if result.key_dates %}
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="font-bold text-lg mb-4">📅 Key Dates</h2>
-      <div class="space-y-3">
-        {% for date in result.key_dates %}
-        <div class="border rounded-xl overflow-hidden">
-          <div class="flex justify-between items-center px-4 py-3 bg-gray-50">
-            <span class="text-sm text-gray-600 font-medium">{{ date.event }}</span>
-            <span class="font-semibold text-sm text-indigo-700">{{ date.date }}</span>
-          </div>
-          <div class="px-4 py-2 bg-white border-t">
-            {% if date.citation and date.citation.found %}
-              <div class="flex flex-wrap items-center gap-1 mb-0.5">
-                <span class="text-indigo-500 text-xs font-semibold">📄 Page {{ date.citation.page }}</span>
-                {% if date.citation.line %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-gray-400 text-xs">Line {{ date.citation.line }}</span>
-                {% endif %}
-                {% if date.citation.section %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-indigo-400 text-xs">§ {{ date.citation.section }}</span>
-                {% endif %}
-              </div>
-              {% if date.citation.quote %}
-              <p class="text-xs text-gray-500 italic">"{{ date.citation.quote }}"</p>
-              {% endif %}
-            {% else %}
-              <span class="text-gray-400 text-xs">📄 Not mentioned in document</span>
-            {% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Documents Required with Citations -->
-    {% if result.documents_required %}
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="font-bold text-lg mb-4">📁 Documents Required</h2>
-      <div class="space-y-2">
-        {% for doc in result.documents_required %}
-        <div class="border rounded-xl overflow-hidden">
-          <div class="flex items-center gap-3 px-4 py-3 bg-gray-50">
-            <span class="text-gray-400">□</span>
-            <span class="text-sm font-medium text-gray-700">
-              {% if doc is mapping %}{{ doc.document }}{% else %}{{ doc }}{% endif %}
-            </span>
-          </div>
-          {% if doc is mapping and doc.citation %}
-          <div class="px-4 py-2 bg-white border-t">
-            {% if doc.citation.found %}
-              <div class="flex flex-wrap items-center gap-1 mb-0.5">
-                <span class="text-indigo-500 text-xs font-semibold">📄 Page {{ doc.citation.page }}</span>
-                {% if doc.citation.line %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-gray-400 text-xs">Line {{ doc.citation.line }}</span>
-                {% endif %}
-                {% if doc.citation.section %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-indigo-400 text-xs">§ {{ doc.citation.section }}</span>
-                {% endif %}
-              </div>
-              {% if doc.citation.quote %}
-              <p class="text-xs text-gray-500 italic">"{{ doc.citation.quote }}"</p>
-              {% endif %}
-            {% else %}
-              <span class="text-gray-400 text-xs">📄 Not mentioned in document</span>
-            {% endif %}
-          </div>
+          {% else %}
+            <span class="cite-none">📄 Not mentioned in document</span>
           {% endif %}
         </div>
-        {% endfor %}
       </div>
+
+      <!-- Performance Guarantee -->
+      <div class="border-item">
+        <div class="bi-main">
+          <span class="bi-label">Performance Guarantee</span>
+          <span class="bi-value">{{ result.financial_requirements.performance_guarantee }}</span>
+        </div>
+        <div class="cite-row">
+          {% if result.financial_requirements.pg_citation and result.financial_requirements.pg_citation.found %}
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:2px;">
+              <span class="cite-page">📄 Page {{ result.financial_requirements.pg_citation.page }}</span>
+              {% if result.financial_requirements.pg_citation.line %}
+              <span class="cite-dot">·</span>
+              <span class="cite-line">Line {{ result.financial_requirements.pg_citation.line }}</span>
+              {% endif %}
+              {% if result.financial_requirements.pg_citation.section %}
+              <span class="cite-dot">·</span>
+              <span class="cite-sec">§ {{ result.financial_requirements.pg_citation.section }}</span>
+              {% endif %}
+            </div>
+            {% if result.financial_requirements.pg_citation.quote %}
+            <p class="cite-quote">"{{ result.financial_requirements.pg_citation.quote }}"</p>
+            {% endif %}
+          {% else %}
+            <span class="cite-none">📄 Not mentioned in document</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Payment Terms -->
+      <div class="bi-simple">
+        <p class="bi-label">Payment Terms</p>
+        <p class="bi-value">{{ result.financial_requirements.payment_terms }}</p>
+      </div>
+
+      <!-- Working Capital -->
+      <div class="bi-simple">
+        <p class="bi-label">Working Capital Needed</p>
+        <p class="bi-value">{{ result.financial_requirements.working_capital_needed }}</p>
+      </div>
+    </div>
+
+    <!-- Key Dates -->
+    {% if result.key_dates %}
+    <div class="res-card">
+      <h2>📅 Key Dates</h2>
+      <div style="height:16px;"></div>
+      {% for date in result.key_dates %}
+      <div class="border-item">
+        <div class="date-main">
+          <span class="date-event">{{ date.event }}</span>
+          <span class="date-val">{{ date.date }}</span>
+        </div>
+        <div class="cite-row">
+          {% if date.citation and date.citation.found %}
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:2px;">
+              <span class="cite-page">📄 Page {{ date.citation.page }}</span>
+              {% if date.citation.line %}
+              <span class="cite-dot">·</span>
+              <span class="cite-line">Line {{ date.citation.line }}</span>
+              {% endif %}
+              {% if date.citation.section %}
+              <span class="cite-dot">·</span>
+              <span class="cite-sec">§ {{ date.citation.section }}</span>
+              {% endif %}
+            </div>
+            {% if date.citation.quote %}
+            <p class="cite-quote">"{{ date.citation.quote }}"</p>
+            {% endif %}
+          {% else %}
+            <span class="cite-none">📄 Not mentioned in document</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Red Flags with Citations -->
+    <!-- Documents Required -->
+    {% if result.documents_required %}
+    <div class="res-card">
+      <h2>📁 Documents Required</h2>
+      <div style="height:16px;"></div>
+      {% for doc in result.documents_required %}
+      <div class="border-item">
+        <div class="doc-main">
+          <span class="doc-check">□</span>
+          <span class="doc-name">
+            {% if doc is mapping %}{{ doc.document }}{% else %}{{ doc }}{% endif %}
+          </span>
+        </div>
+        {% if doc is mapping and doc.citation %}
+        <div class="cite-row">
+          {% if doc.citation.found %}
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:2px;">
+              <span class="cite-page">📄 Page {{ doc.citation.page }}</span>
+              {% if doc.citation.line %}
+              <span class="cite-dot">·</span>
+              <span class="cite-line">Line {{ doc.citation.line }}</span>
+              {% endif %}
+              {% if doc.citation.section %}
+              <span class="cite-dot">·</span>
+              <span class="cite-sec">§ {{ doc.citation.section }}</span>
+              {% endif %}
+            </div>
+            {% if doc.citation.quote %}
+            <p class="cite-quote">"{{ doc.citation.quote }}"</p>
+            {% endif %}
+          {% else %}
+            <span class="cite-none">📄 Not mentioned in document</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Red Flags -->
     {% if result.red_flags and result.red_flags|length > 0 %}
-    <div class="bg-red-50 border border-red-200 rounded-xl p-5">
-      <h2 class="font-bold text-red-700 mb-3">🚩 Red Flags</h2>
-      <div class="space-y-3">
+    <div class="info-card red">
+      <h2>🚩 Red Flags</h2>
+      <div>
         {% for flag in result.red_flags %}
-        <div class="border border-red-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 bg-red-50 flex items-start gap-2">
+        <div class="flag-item">
+          <div class="flag-main">
             <span>⚠️</span>
-            <span class="text-sm text-red-700">
+            <span class="flag-text">
               {% if flag is mapping %}{{ flag.flag }}{% else %}{{ flag }}{% endif %}
             </span>
           </div>
           {% if flag is mapping and flag.citation %}
-          <div class="px-4 py-2 bg-white border-t">
+          <div class="cite-row">
             {% if flag.citation.found %}
-              <div class="flex flex-wrap items-center gap-1 mb-0.5">
-                <span class="text-indigo-500 text-xs font-semibold">📄 Page {{ flag.citation.page }}</span>
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:2px;">
+                <span class="cite-page">📄 Page {{ flag.citation.page }}</span>
                 {% if flag.citation.line %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-gray-400 text-xs">Line {{ flag.citation.line }}</span>
+                <span class="cite-dot">·</span>
+                <span class="cite-line">Line {{ flag.citation.line }}</span>
                 {% endif %}
                 {% if flag.citation.section %}
-                <span class="text-gray-300 text-xs">·</span>
-                <span class="text-indigo-400 text-xs">§ {{ flag.citation.section }}</span>
+                <span class="cite-dot">·</span>
+                <span class="cite-sec">§ {{ flag.citation.section }}</span>
                 {% endif %}
               </div>
               {% if flag.citation.quote %}
-              <p class="text-xs text-gray-500 italic">"{{ flag.citation.quote }}"</p>
+              <p class="cite-quote">"{{ flag.citation.quote }}"</p>
               {% endif %}
             {% else %}
-              <span class="text-gray-400 text-xs">📄 Not mentioned in document</span>
+              <span class="cite-none">📄 Not mentioned in document</span>
             {% endif %}
           </div>
           {% endif %}
@@ -428,74 +952,64 @@
     {% endif %}
 
     <!-- Recommendations -->
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="font-bold text-lg mb-3">💡 Recommendations</h2>
-      <ul class="space-y-3">
+    <div class="res-card">
+      <h2>💡 Recommendations</h2>
+      <div style="height:14px;"></div>
+      <div class="rec-list">
         {% for rec in result.recommendations %}
-        <li class="flex items-start gap-3 text-sm text-gray-600 bg-indigo-50 rounded-lg px-4 py-3">
-          <span class="text-indigo-500 font-bold mt-0.5">→</span> {{ rec }}
-        </li>
+        <div class="rec-item">
+          <span class="rec-arrow">→</span> {{ rec }}
+        </div>
         {% endfor %}
-      </ul>
+      </div>
     </div>
 
     <!-- Summary -->
-    <div class="bg-gray-50 rounded-xl p-5">
-      <h2 class="font-bold text-lg mb-2">📝 Summary</h2>
-      <p class="text-sm text-gray-600 leading-relaxed">{{ result.summary }}</p>
+    <div class="info-card gray">
+      <h2>📝 Summary</h2>
+      <p>{{ result.summary }}</p>
     </div>
 
     <!-- Analyze Another -->
-    <a href="/analyze"
-      class="block text-center bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
-      Analyze Another Tender
-    </a>
+    <a href="/analyze" class="analyze-again">Analyze Another Tender</a>
 
   </div>
   {% endif %}
+
+</div>
 </div>
 
 
-<!-- ── Questions Modal ─────────────────────────────────────── -->
+<!-- ── Questions Modal ── -->
 {% if show_questions and questions_data %}
-<div id="questionsModal"
-  class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center px-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-8">
+<div id="questionsModal" class="modal-overlay">
+  <div class="modal-box">
 
-    <div class="mb-6">
-      <p class="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">Tender Detected</p>
-      <h2 class="text-xl font-bold text-gray-800">{{ questions_data.tender_title }}</h2>
-      <p class="text-sm text-gray-400 mt-1">
-        Type: <span class="font-medium text-indigo-600">{{ questions_data.tender_type }}</span>
-      </p>
-    </div>
+    <p class="modal-eyebrow">Tender Detected</p>
+    <h2 class="modal-title">{{ questions_data.tender_title }}</h2>
+    <p class="modal-type">Type: <span>{{ questions_data.tender_type }}</span></p>
 
-    <div class="bg-indigo-50 rounded-lg p-4 mb-6 text-sm">
-      <p class="font-semibold text-indigo-700 mb-1">📋 A few quick questions</p>
-      <p class="text-indigo-600">We need a bit more information to complete your analysis accurately. Please answer all questions below.</p>
+    <div class="modal-info">
+      <p class="modal-info-title">📋 A few quick questions</p>
+      <p>We need a bit more information to complete your analysis accurately. Please answer all questions below.</p>
     </div>
 
     <form method="POST" id="answersForm">
       <input type="hidden" name="step" value="answers"/>
-      <div class="space-y-5">
+      <div>
         {% for q in questions_data.questions %}
-        <div class="border rounded-xl p-4 bg-gray-50">
-          <label class="block font-medium text-sm text-gray-800 mb-1">
-            {{ loop.index }}. {{ q.question }}
-          </label>
-          <p class="text-xs text-gray-400 mb-3">{{ q.why_needed }}</p>
+        <div class="q-item">
+          <p class="q-label">{{ loop.index }}. {{ q.question }}</p>
+          <p class="q-why">{{ q.why_needed }}</p>
 
           {% if q.input_type == 'yes_no' or q.input_type == 'select' %}
-            <div class="flex flex-wrap gap-2">
+            <div class="q-options">
               {% for option in q.options %}
-              <label class="flex items-center gap-2 cursor-pointer">
+              <label class="q-option-label">
                 <input type="radio"
                   name="answer_{{ q.question | replace(' ', '_') | truncate(40, True, '') }}"
-                  value="{{ option }}"
-                  class="text-indigo-600"/>
-                <span class="text-sm bg-white border rounded-lg px-3 py-1.5 hover:border-indigo-400">
-                  {{ option }}
-                </span>
+                  value="{{ option }}"/>
+                <span class="q-option-text">{{ option }}</span>
               </label>
               {% endfor %}
             </div>
@@ -503,28 +1017,28 @@
             <input type="number"
               name="answer_{{ q.question | replace(' ', '_') | truncate(40, True, '') }}"
               placeholder="Enter number"
-              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+              class="q-input"/>
           {% else %}
             <input type="text"
               name="answer_{{ q.question | replace(' ', '_') | truncate(40, True, '') }}"
               placeholder="Your answer"
-              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+              class="q-input"/>
           {% endif %}
         </div>
         {% endfor %}
       </div>
 
-      <button type="submit" id="submitAnswersBtn"
-        class="w-full mt-6 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+      <button type="submit" id="submitAnswersBtn" class="submit-btn" style="margin-top:24px;">
         Generate Full Analysis →
       </button>
     </form>
+
   </div>
 </div>
 {% endif %}
 
 
-<!-- Loading states -->
+<!-- Loading states — JS preserved exactly -->
 <script>
   document.getElementById("uploadForm")?.addEventListener("submit", function () {
     const btn = document.getElementById("uploadBtn");

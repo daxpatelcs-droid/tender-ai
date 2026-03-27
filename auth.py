@@ -2,9 +2,23 @@ import os
 import bcrypt
 from supabase import create_client, Client
 
+
 def get_admin_client() -> Client:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_KEY")
+
+    # Fail fast with a clear message instead of a cryptic supabase error
+    if not url:
+        raise EnvironmentError(
+            "SUPABASE_URL environment variable is not set. "
+            "Add it to your Render environment variables."
+        )
+    if not key:
+        raise EnvironmentError(
+            "SUPABASE_SERVICE_KEY environment variable is not set. "
+            "Add it to your Render environment variables."
+        )
+
     return create_client(url, key)
 
 
@@ -66,8 +80,11 @@ def login_user(email, password):
             return {"success": False, "error": "Invalid email or password"}
 
     except Exception as e:
+        # Log the real error for debugging (visible in Render logs)
+        # but show a generic message to the user so internal details
+        # are never exposed in the browser
         print(f"Login error: {e}")
-        return {"success": False, "error": "Invalid email or password"}
+        return {"success": False, "error": "Login failed. Please try again."}
 
 
 # ── Company profile operations ────────────────────────────────
@@ -130,24 +147,24 @@ def save_tender_analysis(user_id, data):
     try:
         admin = get_admin_client()
         record = {
-           "user_id": user_id,
-           "project_name": data.get("project_name", "Unknown Project"),
-           "project_value": float(data.get("project_value", 0) or 0),
-           "location": data.get("location", ""),
-           "deadline": data.get("deadline", ""),
-           "required_turnover": float(data.get("required_turnover", 0) or 0),
-           "required_experience": int(data.get("required_experience", 0) or 0),
-           "eligibility_score": int(data.get("eligibility_score", 0) or 0),
-           "difficulty_score": int(data.get("difficulty_score", 5) or 5),
-           "summary": data.get("summary", ""),
-           "recommendations": data.get("recommendations", []),
-           "tender_type": data.get("tender_type", ""),
-           "overall_eligibility": data.get("overall_eligibility", ""),
-           "bid_recommendation": data.get("bid_recommendation", ""),
-           "eligibility_criteria": data.get("eligibility_criteria", []),
-           "documents_required": data.get("documents_required", []),
-           "red_flags": data.get("red_flags", []),
-                }
+            "user_id": user_id,
+            "project_name": data.get("project_name", "Unknown Project"),
+            "project_value": float(data.get("project_value", 0) or 0),
+            "location": data.get("location", ""),
+            "deadline": data.get("deadline", ""),
+            "required_turnover": float(data.get("required_turnover", 0) or 0),
+            "required_experience": int(data.get("required_experience", 0) or 0),
+            "eligibility_score": int(data.get("eligibility_score", 0) or 0),
+            "difficulty_score": int(data.get("difficulty_score", 5) or 5),
+            "summary": data.get("summary", ""),
+            "recommendations": data.get("recommendations", []),
+            "tender_type": data.get("tender_type", ""),
+            "overall_eligibility": data.get("overall_eligibility", ""),
+            "bid_recommendation": data.get("bid_recommendation", ""),
+            "eligibility_criteria": data.get("eligibility_criteria", []),
+            "documents_required": data.get("documents_required", []),
+            "red_flags": data.get("red_flags", []),
+        }
         admin.table("tender_history").insert(record).execute()
         return {"success": True}
     except Exception as e:

@@ -9,6 +9,12 @@ def get_groq_client():
     return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 
+# ── Constants ─────────────────────────────────────────────────
+# Centralised limits — change here, applies everywhere
+PROMPT_TEXT_LIMIT      = 10000   # chars sent to full analysis prompt
+QUESTION_TEXT_LIMIT    = 6000    # chars sent to question-generation prompt
+
+
 # ── PDF Extraction ────────────────────────────────────────────
 def extract_text_from_pdf(pdf_file):
     """
@@ -74,10 +80,12 @@ def is_section_heading(line):
     return False
 
 
-def get_plain_text_for_prompt(pages):
+def get_plain_text_for_prompt(pages, limit=PROMPT_TEXT_LIMIT):
     """
     Format pages into clearly marked text for AI prompt.
     Every line is numbered so AI can quote precisely.
+    Logs a warning when content is truncated so you know
+    how much of the document the AI is actually seeing.
     """
     output = ""
     for page in pages:
@@ -87,7 +95,16 @@ def get_plain_text_for_prompt(pages):
         for line in page["lines"]:
             prefix = "[HEADING] " if line["is_heading"] else ""
             output += f"L{line['line_num']:03d}: {prefix}{line['text']}\n"
-    return output[:10000]
+
+    if len(output) > limit:
+        print(
+            f"[analyzer] Prompt text truncated: {len(output)} → {limit} chars "
+            f"({len(output) - limit} chars dropped). "
+            f"Consider raising PROMPT_TEXT_LIMIT if pages are being cut."
+        )
+        return output[:limit]
+
+    return output
 
 
 def find_citation(quote, pages):
@@ -135,8 +152,30 @@ def find_citation(quote, pages):
 
 
 def format_pages_for_prompt(pages):
-    """Alias used by app.py"""
+    """Alias used by app.py — delegates to get_plain_text_for_prompt."""
     return get_plain_text_for_prompt(pages)
+
+
+# ── JSON cleaning helper ──────────────────────────────────────
+def _clean_json_response(raw: str) -> str:
+    """
+    Robustly strip markdown code fences that Groq sometimes wraps
+    around JSON responses. Handles all of these edge cases:
+        ```json { ... } ```
+        ``` { ... } ```
+        { ... }   ← already clean, returned as-is
+
+    Does NOT modify the JSON content itself.
+    """
+    raw = raw.strip()
+
+    # Remove opening fence (```json or just ```)
+    raw = re.sub(r'^```(?:json)?\s*', '', raw, flags=re.IGNORECASE)
+
+    # Remove closing fence
+    raw = re.sub(r'\s*```$', '', raw)
+
+    return raw.strip()
 
 
 # ── CALL 1: Extract questions ─────────────────────────────────
@@ -146,6 +185,13 @@ def extract_questions(pdf_text, company_profile):
     and generate smart specific questions.
     """
     client = get_groq_client()
+
+    # Warn if question prompt is being truncated
+    if len(pdf_text) > QUESTION_TEXT_LIMIT:
+        print(
+            f"[analyzer] Question prompt text truncated: "
+            f"{len(pdf_text)} → {QUESTION_TEXT_LIMIT} chars."
+        )
 
     prompt = f"""
 You are an expert Indian government tender analyst.
@@ -160,7 +206,7 @@ COMPANY PROFILE:
 - Certifications: {company_profile.get('certifications', 'None')}
 
 TENDER DOCUMENT:
-{pdf_text[:6000]}
+{pdf_text[:QUESTION_TEXT_LIMIT]}
 
 Based on what this tender requires vs what the company profile provides,
 generate 3-7 specific questions about MISSING information that affects eligibility.
@@ -192,11 +238,13 @@ Only include options array for yes_no (always ["Yes","No"]) or select types.
             max_tokens=2000,
         )
         raw = response.choices[0].message.content.strip()
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        return {"success": True, "data": json.loads(raw.strip())}
+        clean = _clean_json_response(raw)
+        return {"success": True, "data": json.loads(clean)}
+
+    except json.JSONDecodeError as e:
+        print(f"Question JSON parse error: {e}")
+        print(f"Raw response was: {raw[:300]}")   # helps debug bad AI output
+        return {"success": False, "error": "AI returned invalid response. Please try again."}
     except Exception as e:
         print(f"Question generation error: {e}")
         return {"success": False, "error": str(e)}
@@ -329,12 +377,8 @@ Return ONLY valid JSON. No markdown, no explanation:
             max_tokens=4000,
         )
         raw = response.choices[0].message.content.strip()
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        raw = raw.strip()
-        result = json.loads(raw)
+        clean = _clean_json_response(raw)
+        result = json.loads(clean)
 
         # ── Python verifies all citations ─────────────────────
         if pages:
@@ -343,7 +387,8 @@ Return ONLY valid JSON. No markdown, no explanation:
         return {"success": True, "data": result}
 
     except json.JSONDecodeError as e:
-        print(f"JSON parse error: {e}")
+        print(f"Analysis JSON parse error: {e}")
+        print(f"Raw response was: {raw[:300]}")   # helps debug bad AI output
         return {"success": False, "error": "AI returned invalid response. Please try again."}
     except Exception as e:
         print(f"Groq API error: {e}")
